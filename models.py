@@ -1,9 +1,8 @@
 """
-Data models for Philosophy Vacancy Notices.
+Data models for Philosophy Vacancy Notices with deep PDF extraction fields.
 """
 
 import hashlib
-import json
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Optional
@@ -20,6 +19,13 @@ class VacancyNotice:
     date_posted: Optional[str] = None
     source: str = "DU Portal"
     discovered_at: str = ""
+    # Deep extracted information from official notice/PDF
+    vacancies_count: str = "01 Post"
+    category: str = "UR / All Eligible"
+    interview_date: str = "Check PDF"
+    reporting_time: str = "Report 30 mins before"
+    venue: str = "Principal Office / Committee Room"
+    deadline: str = ""
 
     def __post_init__(self):
         if not self.discovered_at:
@@ -38,4 +44,11 @@ class VacancyNotice:
 
     @classmethod
     def from_dict(cls, data: dict) -> "VacancyNotice":
-        return cls(**data)
+        # Handle backward compatibility for older JSON entries without new fields
+        valid_fields = {
+            "id", "title", "college", "post_type", "link", "pdf_link",
+            "date_posted", "source", "discovered_at", "vacancies_count",
+            "category", "interview_date", "reporting_time", "venue", "deadline"
+        }
+        filtered = {k: v for k, v in data.items() if k in valid_fields}
+        return cls(**filtered)
