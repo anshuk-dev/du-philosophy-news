@@ -12,7 +12,7 @@ from sources.du_philosophy_dept import scrape_philosophy_dept
 from sources.colrec import scrape_colrec
 from sources.rss_monitor import scrape_rss_monitor
 from storage import process_notices, update_readme_dashboard
-from notifier import send_email_alert
+from notifier import notify_all
 
 
 def get_current_ist_time() -> str:
@@ -83,10 +83,10 @@ def main():
 
     # Send Notification if new notices found
     if new_notices:
-        print(f"\n🚀 Sending email alert for {len(new_notices)} new notice(s)...")
-        send_email_alert(new_notices)
+        print(f"\n🚀 Dispatching alerts for {len(new_notices)} new notice(s)...")
+        notify_all(new_notices)
     else:
-        print("\nℹ️ No new notices since last check. Email alert not needed.")
+        print("\nℹ️ No new notices since last check. Alerts not needed.")
 
     print("\n" + "=" * 70)
     print("🏁 Run completed successfully.")
