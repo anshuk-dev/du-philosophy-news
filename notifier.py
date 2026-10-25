@@ -83,84 +83,58 @@ def create_github_issue(new_notices: List[VacancyNotice]) -> bool:
 
 def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
     """
-    Builds an authoritative Academic Gazette & Recruitment Bulletin email.
-    Designed in the tradition of premier university gazettes (Oxford/UChicago/DU),
-    with table-based bulletproof rendering for flawless display in Gmail, Apple Mail, and Outlook.
+    Builds a high-end, minimalist Editorial Academic Broadsheet newsletter.
+    Inspired by Adobe Express and Canva editorial publication templates (Playfair/Bodoni
+    high-contrast serif, restrained warm-stone palette, hairline grid rules, and generous whitespace).
+    Uses strict table-based architecture for bulletproof rendering in Gmail, Outlook, and Apple Mail.
     """
     count = len(new_notices)
     plural = "ies" if count > 1 else "y"
+    today_date = datetime.now().strftime("%d %B %Y").upper()
 
     # 1. Plain Text Version
     text_lines = [
         "=================================================================",
-        "   DELHI UNIVERSITY (DU) — PHILOSOPHY FACULTY RECRUITMENT GAZETTE",
-        "         Official Walk-in & Vacancy Notification Dispatch",
+        "                 THE DU PHILOSOPHY GAZETTE",
+        "        Official Faculty Recruitment & Walk-in Dispatch",
         "=================================================================",
-        f"Edition: {datetime.now().strftime('%d %B %Y')} | {count} Verified Vacanc{plural}\n",
+        f"EDITION: {today_date}  |  {count} VERIFIED VACANC{plural.upper()}\n",
     ]
 
     for idx, n in enumerate(new_notices, 1):
-        text_lines.append(f"[{idx}] 🏛️ {n.college.upper()}")
-        text_lines.append(f"    Post Type       : {n.post_type}")
-        text_lines.append(f"    Notice Title    : {n.title}")
-        text_lines.append(f"    Vacancies       : {n.vacancies_count}")
-        text_lines.append(f"    Category Matrix : {n.category}")
-        text_lines.append(f"    Interview Date  : {n.interview_date}")
-        text_lines.append(f"    Reporting Time  : {n.reporting_time}")
-        text_lines.append(f"    Venue / Room    : {n.venue}")
-        text_lines.append(f"    Deadline        : {n.deadline or 'Walk-in on Interview Date'}")
+        text_lines.append(f"[{idx:02d}] {n.college.upper()}")
+        text_lines.append(f"     TYPE      : {n.post_type}")
+        text_lines.append(f"     NOTICE    : {n.title}")
+        text_lines.append(f"     SEATS     : {n.vacancies_count} ({n.category})")
+        text_lines.append(f"     INTERVIEW : {n.interview_date}")
+        text_lines.append(f"     REPORTING : {n.reporting_time}")
+        text_lines.append(f"     VENUE     : {n.venue}")
+        text_lines.append(f"     MODE      : {n.deadline or 'Walk-in on Interview Date'}")
         if n.pdf_link:
-            text_lines.append(f"    Official PDF    : {n.pdf_link}")
-        text_lines.append(f"    Portal Link     : {n.link}")
+            text_lines.append(f"     PDF LINK  : {n.pdf_link}")
+        text_lines.append(f"     PORTAL    : {n.link}")
         text_lines.append("-" * 65)
 
-    text_lines.append("\nCandidate Guidelines:")
-    text_lines.append("1. Candidate must be empanelled in the latest DU Philosophy Ad-hoc Panel.")
-    text_lines.append("2. Carry complete CV, original certificates, NET/JRF awards, and self-attested photocopies.")
-    text_lines.append("3. Report 30 minutes prior to scheduled reporting time.")
-    text_lines.append(f"\nDelivered automatically to {RECIPIENT_EMAIL} by DU Philosophy Vacancy Tracker.")
+    text_lines.append("\nCANDIDATE PROTOCOL:")
+    text_lines.append("01. Empanelled in the current DU Philosophy Ad-hoc Panel.")
+    text_lines.append("02. Carry updated CV, degrees, NET/JRF certificates, and 1 set of self-attested copies.")
+    text_lines.append("03. Report 30 minutes prior to scheduled reporting time.")
+    text_lines.append(f"\nDispatched to {RECIPIENT_EMAIL} by DU Philosophy Automated Gazette.")
     plain_text = "\n".join(text_lines)
 
-    # 2. Academic Gazette HTML Cards
+    # 2. Editorial HTML Cards
     cards_html = []
     for idx, n in enumerate(new_notices, 1):
-        # Color coding badges based on post type
-        post_lower = n.post_type.lower()
-        if "walk-in" in post_lower or "interview" in post_lower:
-            badge_bg = "#fef2f2"
-            badge_border = "#fecaca"
-            badge_color = "#991b1b"
-            accent_bar = "#b91c1c"
-            badge_icon = "⚡ WALK-IN INTERVIEW"
-        elif "guest" in post_lower:
-            badge_bg = "#eff6ff"
-            badge_border = "#bfdbfe"
-            badge_color = "#1e40af"
-            accent_bar = "#2563eb"
-            badge_icon = "🎓 GUEST FACULTY"
-        elif "assistant" in post_lower or "permanent" in post_lower:
-            badge_bg = "#f0fdf4"
-            badge_border = "#bbf7d0"
-            badge_color = "#166534"
-            accent_bar = "#16a34a"
-            badge_icon = "🏛️ ASSISTANT PROFESSOR"
-        else:
-            badge_bg = "#fefce8"
-            badge_border = "#fef08a"
-            badge_color = "#854d0e"
-            accent_bar = "#d97706"
-            badge_icon = f"📢 {n.post_type.upper()}"
-
-        # PDF Action Button
+        # Action Buttons (Canva/Adobe Minimalist Solid + Ghost Buttons)
         pdf_button_html = ""
         if n.pdf_link:
             pdf_button_html = f"""
-            <td style="padding-right: 10px;">
+            <td style="padding-right: 12px;">
                 <table border="0" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td align="center" style="border-radius: 6px; background-color: #991b1b;">
-                            <a href="{n.pdf_link}" target="_blank" style="display: inline-block; padding: 9px 18px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 6px;">
-                                📥 Download Official PDF Notice &rarr;
+                        <td align="center" style="background-color: #1c1917; border-radius: 2px;">
+                            <a href="{n.pdf_link}" target="_blank" style="display: inline-block; padding: 10px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-weight: 700; color: #ffffff; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px;">
+                                Download Notice (PDF) &rarr;
                             </a>
                         </td>
                     </tr>
@@ -172,9 +146,9 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
         <td>
             <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td align="center" style="border-radius: 6px; background-color: #0f172a;">
-                        <a href="{n.link}" target="_blank" style="display: inline-block; padding: 9px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 6px;">
-                            🔗 College Verification Page &nearr;
+                    <td align="center" style="background-color: transparent; border: 1px solid #1c1917; border-radius: 2px;">
+                        <a href="{n.link}" target="_blank" style="display: inline-block; padding: 9px 18px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-weight: 700; color: #1c1917; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px;">
+                            Verification Portal &nearr;
                         </a>
                     </td>
                 </tr>
@@ -183,90 +157,88 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
         """
 
         card = f"""
-        <!-- NOTICE CARD {idx} -->
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid {accent_bar}; border-radius: 8px; margin-bottom: 22px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+        <!-- EDITORIAL NOTICE ITEM {idx:02d} -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border: 1px solid #e7e5e0; border-radius: 4px; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
             <tr>
-                <td style="padding: 22px 24px;">
+                <td style="padding: 26px 28px;">
                     
-                    <!-- Card Header: College & Badges -->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;">
+                    <!-- Kicker & Metadata Bar -->
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 10px;">
                         <tr>
-                            <td align="left" style="vertical-align: middle;">
-                                <span style="font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">
-                                    College / Institution
+                            <td align="left">
+                                <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10.5px; font-weight: 700; color: #701a28; letter-spacing: 2px; text-transform: uppercase;">
+                                    DISPATCH #{idx:02d} &bull; {n.post_type}
                                 </span>
-                                <h2 style="margin: 3px 0 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: 21px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px;">
-                                    🏛️ {n.college}
-                                </h2>
                             </td>
-                            <td align="right" style="vertical-align: top;">
-                                <span style="display: inline-block; background-color: {badge_bg}; border: 1px solid {badge_border}; color: {badge_color}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    {badge_icon}
+                            <td align="right">
+                                <span style="display: inline-block; border: 1px solid #d6d3d1; background-color: #faf9f5; color: #44403c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 2px; text-transform: uppercase; letter-spacing: 1px;">
+                                    VERIFIED NOTICE
                                 </span>
                             </td>
                         </tr>
                     </table>
 
+                    <!-- College Display Title (Editorial Serif) -->
+                    <h2 style="margin: 0 0 8px 0; font-family: 'Playfair Display', 'Bodoni MT', 'Didot', Georgia, serif; font-size: 24px; font-weight: 700; color: #1c1917; letter-spacing: -0.4px; line-height: 1.25;">
+                        {n.college}
+                    </h2>
+
                     <!-- Notice Title -->
-                    <p style="margin: 0 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; font-weight: 600; color: #334155; line-height: 1.5;">
+                    <p style="margin: 0 0 18px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #57534e; line-height: 1.6;">
                         {n.title}
                     </p>
 
-                    <!-- Academic Data Matrix (Structured Table) -->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 18px;">
+                    <!-- Editorial Specification Grid (Hairline Separators) -->
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e7e5e0; border-bottom: 1px solid #e7e5e0; padding: 14px 0; margin-bottom: 20px;">
                         <tr>
-                            <td style="padding: 12px 16px;">
-                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13.5px;">
+                            <td>
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px;">
                                     <tr>
-                                        <td width="35%" style="padding: 6px 0; color: #64748b; font-weight: 600;">
-                                            👥 Vacancies & Posts:
+                                        <td width="35%" style="padding: 5px 0; color: #78716c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                                            Positions & Seats:
                                         </td>
-                                        <td style="padding: 6px 0; color: #0f172a; font-weight: 800; font-size: 14px;">
+                                        <td style="padding: 5px 0; color: #1c1917; font-weight: 700;">
                                             {n.vacancies_count}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 6px 0; color: #64748b; font-weight: 600;">
-                                            🏷️ Category Matrix:
+                                        <td style="padding: 5px 0; color: #78716c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                                            Category Matrix:
                                         </td>
-                                        <td style="padding: 6px 0;">
-                                            <span style="display: inline-block; background-color: #ede9fe; color: #5b21b6; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 12.5px;">
-                                                {n.category}
-                                            </span>
+                                        <td style="padding: 5px 0; color: #1c1917; font-weight: 600;">
+                                            {n.category}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 6px 0; color: #64748b; font-weight: 600;">
-                                            🗓️ Walk-in Date & Time:
+                                        <td style="padding: 5px 0; color: #78716c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                                            Walk-in Date & Time:
                                         </td>
-                                        <td style="padding: 6px 0;">
-                                            <span style="display: inline-block; background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-weight: 800; padding: 3px 10px; border-radius: 4px; font-size: 13.5px;">
-                                                {n.interview_date}
-                                            </span>
+                                        <td style="padding: 5px 0; color: #701a28; font-weight: 800; font-size: 14px;">
+                                            {n.interview_date}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 6px 0; color: #64748b; font-weight: 600;">
-                                            ⏰ Reporting Time:
+                                        <td style="padding: 5px 0; color: #78716c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                                            Reporting Time:
                                         </td>
-                                        <td style="padding: 6px 0; color: #1e293b; font-weight: 600;">
+                                        <td style="padding: 5px 0; color: #292524; font-weight: 600;">
                                             {n.reporting_time}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 6px 0; color: #64748b; font-weight: 600;">
-                                            📍 Venue / Room:
+                                        <td style="padding: 5px 0; color: #78716c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                                            Venue / Location:
                                         </td>
-                                        <td style="padding: 6px 0; color: #334155; font-weight: 500;">
+                                        <td style="padding: 5px 0; color: #44403c;">
                                             {n.venue}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 6px 0; color: #64748b; font-weight: 600;">
-                                            ⏳ Mode / Deadline:
+                                        <td style="padding: 5px 0; color: #78716c; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                                            Mode / Deadline:
                                         </td>
-                                        <td style="padding: 6px 0; color: #047857; font-weight: 700;">
-                                            {n.deadline or 'Walk-in (Bring Original Documents)'}
+                                        <td style="padding: 5px 0; color: #1c1917; font-weight: 600;">
+                                            {n.deadline or 'Walk-in (Bring Original Dossier)'}
                                         </td>
                                     </tr>
                                 </table>
@@ -289,50 +261,67 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
         cards_html.append(card)
 
     all_cards = "\n".join(cards_html)
-    today_date = datetime.now().strftime("%A, %d %B %Y")
 
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delhi University Philosophy Faculty Bulletin</title>
+    <title>The DU Philosophy Gazette</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; background-color: #f7f6f2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
 
     <!-- Hidden Preheader for Inbox Preview -->
-    <div style="display: none; font-size: 1px; color: #f1f5f9; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
-        DU Faculty Bulletin: {count} new verified Philosophy walk-in interview notice(s) announced. Dates, venues, seat matrix & official PDF download links inside.
+    <div style="display: none; font-size: 1px; color: #f7f6f2; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
+        DU Philosophy Gazette: {count} verified walk-in vacancy dispatch(es) announced across colleges. Full schedule, seat matrix & PDF notices.
     </div>
 
     <!-- Outer Wrapper -->
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 25px 0;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f7f6f2; padding: 36px 0;">
         <tr>
             <td align="center">
 
                 <!-- Main Container (640px) -->
-                <table border="0" cellpadding="0" cellspacing="0" width="640" style="max-width: 640px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08);">
+                <table border="0" cellpadding="0" cellspacing="0" width="640" style="max-width: 640px; width: 100%; background-color: #ffffff; border: 1px solid #e7e5e0; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);">
                     
-                    <!-- TOP UNIVERSITY HEADER (Academic Gazette Styling) -->
+                    <!-- EDITORIAL MASTHEAD (Adobe & Canva Magazine Broadsheet) -->
                     <tr>
-                        <td style="background-color: #881337; background: linear-gradient(135deg, #701a28 0%, #881337 50%, #991b1b 100%); padding: 32px 30px; text-align: center; border-bottom: 4px solid #d97706;">
+                        <td style="padding: 34px 34px 24px 34px; background-color: #ffffff;">
                             
-                            <!-- University Masthead -->
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                            <!-- Overline / University Header -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 14px;">
                                 <tr>
-                                    <td align="center">
-                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; font-weight: 800; color: #fde68a; letter-spacing: 2px; text-transform: uppercase;">
-                                            UNIVERSITY OF DELHI &bull; DEPARTMENT OF PHILOSOPHY
+                                    <td align="left">
+                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 800; color: #78716c; letter-spacing: 2.5px; text-transform: uppercase;">
+                                            UNIVERSITY OF DELHI &bull; DEPT. OF PHILOSOPHY
                                         </span>
-                                        <h1 style="margin: 8px 0 6px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 25px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px; line-height: 1.25;">
-                                            Faculty Recruitment Gazette
-                                        </h1>
-                                        <p style="margin: 0 0 14px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13.5px; color: #fecdd3; font-weight: 500;">
-                                            Official Walk-In Interviews & Vacancy Dispatch for Philosophy (दर्शनशास्त्र)
-                                        </p>
-                                        <span style="display: inline-block; background-color: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; font-weight: 700; padding: 4px 14px; border-radius: 20px; letter-spacing: 0.5px;">
-                                            📅 {today_date} &bull; {count} Active Notice(s)
+                                    </td>
+                                    <td align="right">
+                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 700; color: #a8a29e; letter-spacing: 1.5px; text-transform: uppercase;">
+                                            VOL. XXIV // NO. 10
                                         </span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Hairline Accent Divider -->
+                            <div style="height: 1px; background-color: #1c1917; margin-bottom: 18px;"></div>
+
+                            <!-- Publication Title (Playfair Display / Serif) -->
+                            <h1 style="margin: 0 0 6px 0; font-family: 'Playfair Display', 'Bodoni MT', 'Didot', Georgia, serif; font-size: 34px; font-weight: 700; color: #1c1917; letter-spacing: -0.8px; line-height: 1.15;">
+                                The Philosophy Gazette
+                            </h1>
+
+                            <!-- Subhead -->
+                            <p style="margin: 0 0 16px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-style: italic; color: #78716c; line-height: 1.4;">
+                                Official Faculty Recruitment Dispatches & Walk-in Interview Bulletins
+                            </p>
+
+                            <!-- Issue Metadata Strip -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #e7e5e0; border-bottom: 1px solid #e7e5e0; padding: 8px 0;">
+                                <tr>
+                                    <td align="left" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10.5px; font-weight: 700; color: #78716c; letter-spacing: 1px; text-transform: uppercase;">
+                                        DATE: {today_date} &nbsp;&bull;&nbsp; DISPATCHES: {count} ACTIVE &nbsp;&bull;&nbsp; STATUS: ONGOING & UPCOMING
                                     </td>
                                 </tr>
                             </table>
@@ -340,56 +329,51 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                         </td>
                     </tr>
 
-                    <!-- SUMMARY STATS RIBBON -->
+                    <!-- EDITORIAL BODY CANVAS -->
                     <tr>
-                        <td style="background-color: #0f172a; padding: 12px 24px;">
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                                <tr>
-                                    <td align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #94a3b8;">
-                                        ⚡ <strong style="color: #ffffff;">STATUS:</strong> Strictly Ongoing & Upcoming
-                                        &nbsp;&bull;&nbsp;
-                                        🏛️ <strong style="color: #ffffff;">SUBJECT:</strong> Philosophy
-                                        &nbsp;&bull;&nbsp;
-                                        📑 <strong style="color: #38bdf8;">DEEP PDF OCR:</strong> Extracted
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-
-                    <!-- MAIN CONTENT BODY -->
-                    <tr>
-                        <td style="padding: 26px 28px; background-color: #f8fafc;">
+                        <td style="padding: 10px 34px 28px 34px; background-color: #fcfbf9;">
                             
-                            <p style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; color: #334155; line-height: 1.6;">
-                                Respected <strong>Candidate / Faculty Aspirant</strong>,<br>
-                                Below are the latest verified vacancies and walk-in interviews for <strong>Philosophy</strong> across Delhi University colleges. All details (interview dates, venues, category allocations, and application modes) have been verified directly against official university portals and notification PDFs:
+                            <p style="margin: 16px 0 24px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; color: #44403c; line-height: 1.65;">
+                                Dear <strong>Candidate</strong>,<br>
+                                Below are the latest verified faculty vacancy dispatches and walk-in interview schedules for <strong>Philosophy (दर्शनशास्त्र)</strong> across Delhi University colleges. All notices are extracted directly from official notification registries:
                             </p>
 
                             <!-- CARDS INJECTION -->
                             {all_cards}
 
-                            <!-- CANDIDATE INSTRUCTIONS BOX -->
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #2563eb; border-radius: 6px; margin-top: 10px;">
+                            <!-- CANDIDATE PROTOCOL MEMO (Canva Editorial Style) -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #faf9f5; border: 1px solid #e7e5e0; border-radius: 4px; margin-top: 10px;">
                                 <tr>
-                                    <td style="padding: 18px 20px;">
-                                        <h3 style="margin: 0 0 8px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 16px; color: #1e40af; font-weight: 700;">
-                                            📋 Mandatory Walk-in Candidate Checklist
-                                        </h3>
-                                        <ul style="margin: 0; padding-left: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #1e3a8a; line-height: 1.6;">
-                                            <li style="margin-bottom: 5px;">
-                                                <strong>Ad-hoc Panel Eligibility:</strong> Ensure your name is empanelled in the latest official <strong>DU Philosophy Ad-hoc Panel</strong> for the current session.
-                                            </li>
-                                            <li style="margin-bottom: 5px;">
-                                                <strong>Dossier to Carry:</strong> Bring your updated <strong>Curriculum Vitae (CV)</strong>, original degrees, marksheets, NET/JRF certificates, and 1 set of self-attested photocopies.
-                                            </li>
-                                            <li style="margin-bottom: 5px;">
-                                                <strong>Category Proof:</strong> If applying under reserved categories (OBC-NCL, SC, ST, EWS, PwD), bring a valid certificate issued in the prescribed central format.
-                                            </li>
-                                            <li>
-                                                <strong>Reporting Protocol:</strong> Report at the specified venue at least <strong>30 minutes</strong> before the scheduled time. No TA/DA is provided by the university.
-                                            </li>
-                                        </ul>
+                                    <td style="padding: 24px 26px;">
+                                        <span style="display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10.5px; font-weight: 800; color: #701a28; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;">
+                                            MANDATORY CANDIDATE PROTOCOL
+                                        </span>
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #44403c; line-height: 1.6;">
+                                            <tr>
+                                                <td style="padding-bottom: 8px; vertical-align: top; width: 28px; font-weight: 700; color: #78716c;">01.</td>
+                                                <td style="padding-bottom: 8px;">
+                                                    <strong>Ad-hoc Panel Registration:</strong> Candidates must be empanelled in the latest official <strong>DU Philosophy Ad-hoc Panel</strong> for the current academic session.
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding-bottom: 8px; vertical-align: top; width: 28px; font-weight: 700; color: #78716c;">02.</td>
+                                                <td style="padding-bottom: 8px;">
+                                                    <strong>Dossier Requirements:</strong> Carry your updated CV, original marksheets, degree certificates, NET/JRF certificates, and 1 set of self-attested photocopies.
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding-bottom: 8px; vertical-align: top; width: 28px; font-weight: 700; color: #78716c;">03.</td>
+                                                <td style="padding-bottom: 8px;">
+                                                    <strong>Category Verification:</strong> Reserved category applicants (OBC-NCL, SC, ST, EWS) must present valid certificates in the prescribed central format.
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="vertical-align: top; width: 28px; font-weight: 700; color: #78716c;">04.</td>
+                                                <td>
+                                                    <strong>Reporting Protocol:</strong> Report to the specified venue at least <strong>30 minutes</strong> prior to the designated reporting time.
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                             </table>
@@ -397,19 +381,27 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                         </td>
                     </tr>
 
-                    <!-- INSTITUTIONAL FOOTER -->
+                    <!-- EDITORIAL COLOPHON / FOOTER -->
                     <tr>
-                        <td style="background-color: #0f172a; padding: 24px 30px; text-align: center; border-top: 1px solid #1e293b;">
-                            <p style="margin: 0 0 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 600; color: #e2e8f0;">
-                                Delhi University Philosophy Faculty Automated Monitoring Gazette
-                            </p>
-                            <p style="margin: 0 0 10px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #94a3b8; line-height: 1.5;">
-                                Automated 24x7 Cloud Dispatch &bull; Delivered to <strong style="color: #38bdf8;">{RECIPIENT_EMAIL}</strong><br>
-                                Powered by GitHub Actions Cloud &bull; Scanned via PyMuPDF & Tesseract OCR
-                            </p>
-                            <p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; color: #64748b;">
-                                University of Delhi &bull; Department of Philosophy &bull; Faculty of Arts &bull; New Delhi 110007
-                            </p>
+                        <td style="padding: 26px 34px; background-color: #ffffff; border-top: 1px solid #1c1917; text-align: left;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="left">
+                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 800; color: #1c1917; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 4px;">
+                                            THE DU PHILOSOPHY GAZETTE // AUTONOMOUS MONITOR
+                                        </span>
+                                        <p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; color: #78716c; line-height: 1.5;">
+                                            Dispatched to <strong style="color: #1c1917;">{RECIPIENT_EMAIL}</strong> &bull; Powered by GitHub Actions Cloud 24/7<br>
+                                            Faculty of Arts &bull; University of Delhi &bull; New Delhi 110007
+                                        </p>
+                                    </td>
+                                    <td align="right" style="vertical-align: middle;">
+                                        <span style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-style: italic; color: #a8a29e;">
+                                            Du.ac.in
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 
@@ -422,6 +414,8 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
 </body>
 </html>
 """
+
+    return plain_text, html_content
 
     return plain_text, html_content
 
