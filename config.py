@@ -4,12 +4,25 @@ Configuration settings for Delhi University (DU) Philosophy Faculty Vacancy Trac
 
 import os
 
+# Auto-load local .env if present
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_path):
+    try:
+        with open(_env_path, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and "=" in _line and not _line.startswith("#"):
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+    except Exception:
+        pass
+
 # Recipient Email for Vacancy Notifications
 DEFAULT_RECIPIENT_EMAIL = "anshu.philosophy@gmail.com"
 RECIPIENT_EMAIL = os.environ.get("RECIPIENT_EMAIL", DEFAULT_RECIPIENT_EMAIL)
 
-# Gmail SMTP Configuration (Fetched from GitHub Secrets or Local Environment)
-GMAIL_USER = os.environ.get("GMAIL_USER", "")
+# Gmail SMTP Configuration (Fetched from GitHub Secrets, .env or Environment)
+GMAIL_USER = os.environ.get("GMAIL_USER", "anshu.philosophy@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
