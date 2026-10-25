@@ -1,8 +1,8 @@
 """
 Scraper for Delhi University Central Portal (Work with DU).
 URL: https://www.du.ac.in/index.php?page=work-with-du
-Extracts current and upcoming Philosophy faculty / guest notices and direct PDF links.
-Enriches notices with deep PDF text & OCR analysis (vacancies count, category, interview date, venue).
+Strictly extracts only ONGOING and UPCOMING Philosophy faculty notices.
+Discards past expired interviews and candidate empanelment lists.
 """
 
 from typing import List, Optional
@@ -12,7 +12,7 @@ import urllib3
 from bs4 import BeautifulSoup
 
 from config import REQUEST_HEADERS, REQUEST_TIMEOUT, PHILOSOPHY_KEYWORDS, DU_PHILOSOPHY_COLLEGES
-from date_utils import is_current_or_upcoming
+from date_utils import is_strictly_ongoing_or_upcoming, NON_VACANCY_PATTERNS
 from models import VacancyNotice
 from pdf_analyzer import analyze_pdf_details
 
@@ -50,8 +50,6 @@ def extract_post_type(text: str) -> str:
     t = text.lower()
     if "guest" in t:
         return "Guest Faculty (Walk-in / Interview)"
-    if "ad-hoc" in t or "adhoc" in t or "panel" in t:
-        return "Ad-hoc / Panel Empanelment"
     if "walk-in" in t or "walk in" in t:
         return "Walk-in Interview"
     if "assistant professor" in t:
@@ -69,7 +67,6 @@ def get_pdf_from_article(article_url: str, article_title: str = "") -> Optional[
             return None
         soup = BeautifulSoup(resp.content, "html.parser")
 
-        # 1. First priority: PDF link mentioning philosophy or matching article title
         for a in soup.find_all("a"):
             href = a.get("href", "").strip()
             text = a.get_text(strip=True).lower()
@@ -81,7 +78,6 @@ def get_pdf_from_article(article_url: str, article_title: str = "") -> Optional[
             if "philosophy" in href.lower() or "philosophy" in text or (article_title and article_title.lower()[:20] in text):
                 return urljoin("https://www.du.ac.in/", href)
 
-        # 2. Second priority: Any non-static PDF uploaded in 2026/2025/new-web
         for a in soup.find_all("a"):
             href = a.get("href", "").strip()
             if not href or ".pdf" not in href.lower():
@@ -97,14 +93,13 @@ def get_pdf_from_article(article_url: str, article_title: str = "") -> Optional[
 
 
 def scrape_work_with_du() -> List[VacancyNotice]:
-    """Scrape work-with-du page for current & upcoming Philosophy notices."""
+    """Scrape work-with-du page strictly for ONGOING & UPCOMING notices."""
     notices: List[VacancyNotice] = []
     seen_ids = set()
 
     try:
         resp = requests.get(WORK_WITH_DU_URL, headers=REQUEST_HEADERS, verify=False, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
-            print(f"[Work with DU] Failed with HTTP {resp.status_code}")
             return notices
 
         soup = BeautifulSoup(resp.content, "html.parser")
@@ -122,6 +117,10 @@ def scrape_work_with_du() -> List[VacancyNotice]:
                 pub_date = cells[1] if len(cells) > 1 else ""
                 last_date = cells[2] if len(cells) > 2 else ""
 
+                # Ignore candidate data or non-vacancies
+                if any(p in advt_title.lower() for p in NON_VACANCY_PATTERNS):
+                    continue
+
                 row_links = [urljoin("https://www.du.ac.in/", a.get("href", "").strip()) for a in tr.find_all("a") if a.get("href")]
                 primary_link = row_links[0] if row_links else WORK_WITH_DU_URL
                 pdf_link = next((l for l in row_links if ".pdf" in l.lower() and not any(p in l.lower() for p in STATIC_FOOTER_PATTERNS)), None)
@@ -130,19 +129,14 @@ def scrape_work_with_du() -> List[VacancyNotice]:
                 is_general_teaching = "assistant professor" in advt_title.lower() or "faculty" in advt_title.lower()
 
                 if is_phil or (is_general_teaching and "non-teaching" not in advt_title.lower()):
-                    is_current, date_str, status_tag = is_current_or_upcoming(
+                    is_active, status_reason = is_strictly_ongoing_or_upcoming(
                         title=advt_title,
-                        url=primary_link,
-                        pdf_url=pdf_link,
                         deadline_str=last_date,
-                        published_str=pub_date,
-                        max_days_past=90
+                        published_str=pub_date
                     )
 
-                    if is_current:
+                    if is_active:
                         college = extract_college_name(advt_title)
-                        pdf_meta = analyze_pdf_details(pdf_link, college) if pdf_link else {}
-
                         notice_id = VacancyNotice.generate_id(advt_title, primary_link, pdf_link)
                         if notice_id not in seen_ids:
                             seen_ids.add(notice_id)
@@ -153,14 +147,14 @@ def scrape_work_with_du() -> List[VacancyNotice]:
                                 post_type=extract_post_type(advt_title),
                                 link=primary_link,
                                 pdf_link=pdf_link,
-                                date_posted=date_str or pub_date or "Active",
+                                date_posted=last_date or pub_date or "Ongoing",
                                 source="DU Central Recruitment",
-                                vacancies_count=pdf_meta.get("vacancies_count", "Multiple Posts"),
-                                category=pdf_meta.get("category", "UR / All Reserved"),
-                                interview_date=pdf_meta.get("interview_date", last_date or "Check Portal"),
-                                reporting_time=pdf_meta.get("reporting_time", "Online / Colrec Application"),
-                                venue=pdf_meta.get("venue", f"{college} / Colrec Portal"),
-                                deadline=last_date or pdf_meta.get("deadline", "")
+                                vacancies_count="Multiple Teaching Posts",
+                                category="UR / OBC / SC / ST / EWS",
+                                interview_date="Apply Online Before Last Date",
+                                reporting_time="Online Colrec Portal",
+                                venue=f"{college} / Central Portal",
+                                deadline=last_date
                             ))
 
         # 2. Scrape News / College Notice Links
@@ -168,6 +162,10 @@ def scrape_work_with_du() -> List[VacancyNotice]:
             text = a.get_text(" ", strip=True)
             href = a.get("href", "").strip()
             if not href or href.startswith("#") or href.startswith("javascript:"):
+                continue
+
+            # Ignore candidate empanelment data
+            if any(p in text.lower() for p in NON_VACANCY_PATTERNS):
                 continue
 
             # Check if announcement concerns Philosophy
@@ -180,36 +178,35 @@ def scrape_work_with_du() -> List[VacancyNotice]:
                 elif ".pdf" in full_link.lower() and not any(p in full_link.lower() for p in STATIC_FOOTER_PATTERNS):
                     pdf_link = full_link
 
-                is_current, date_str, status_tag = is_current_or_upcoming(
-                    title=text,
-                    url=full_link,
-                    pdf_url=pdf_link,
-                    max_days_past=120
-                )
+                college = extract_college_name(text)
 
-                if is_current:
-                    college = extract_college_name(text)
-                    pdf_meta = analyze_pdf_details(pdf_link, college) if pdf_link else {}
+                # Analyze PDF for exact interview date and ongoing validation
+                pdf_meta = analyze_pdf_details(pdf_link, title=text, college_hint=college) if pdf_link else {}
 
-                    notice_id = VacancyNotice.generate_id(text, full_link, pdf_link)
-                    if notice_id not in seen_ids:
-                        seen_ids.add(notice_id)
-                        notices.append(VacancyNotice(
-                            id=notice_id,
-                            title=text,
-                            college=college,
-                            post_type=extract_post_type(text),
-                            link=full_link,
-                            pdf_link=pdf_link,
-                            date_posted=date_str or "Current Session",
-                            source="DU Colleges Notice Board",
-                            vacancies_count=pdf_meta.get("vacancies_count", "01 Post"),
-                            category=pdf_meta.get("category", "All Eligible / Reserved"),
-                            interview_date=pdf_meta.get("interview_date", "See Official Notice"),
-                            reporting_time=pdf_meta.get("reporting_time", "30 Mins Before Interview"),
-                            venue=pdf_meta.get("venue", f"Office of the Principal, {college}"),
-                            deadline=pdf_meta.get("deadline", "Walk-in Interview")
-                        ))
+                # STRICT CHECK: Only accept if ongoing or upcoming
+                if not pdf_meta.get("is_active", False):
+                    # Outdated / past interview -> Skip
+                    continue
+
+                notice_id = VacancyNotice.generate_id(text, full_link, pdf_link)
+                if notice_id not in seen_ids:
+                    seen_ids.add(notice_id)
+                    notices.append(VacancyNotice(
+                        id=notice_id,
+                        title=text,
+                        college=college,
+                        post_type=extract_post_type(text),
+                        link=full_link,
+                        pdf_link=pdf_link,
+                        date_posted=pdf_meta.get("interview_date", "Upcoming"),
+                        source="DU Colleges Notice Board",
+                        vacancies_count=pdf_meta.get("vacancies_count", "01 Post"),
+                        category=pdf_meta.get("category", "All Eligible / Reserved"),
+                        interview_date=pdf_meta.get("interview_date", "See Official Notice"),
+                        reporting_time=pdf_meta.get("reporting_time", "30 Mins Before Interview"),
+                        venue=pdf_meta.get("venue", f"Office of the Principal, {college}"),
+                        deadline=pdf_meta.get("deadline", "Walk-in Interview")
+                    ))
 
     except Exception as e:
         print(f"[Work with DU] Error during scraping: {e}")

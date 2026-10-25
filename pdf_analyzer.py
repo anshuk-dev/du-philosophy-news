@@ -6,17 +6,21 @@ Extracts:
   - Interview date & time
   - Reporting time
   - Venue / Location
-  - Application deadline & key instructions
+  - Application deadline
+  - Strict ongoing/upcoming validation (rejects past interviews and student lists)
 """
 
 import os
 import re
 import subprocess
 import tempfile
-from typing import Dict, Optional
+from datetime import datetime
+from typing import Dict
 import urllib3
 import requests
-import fitz  # PyMuPDF
+import fitz
+
+from date_utils import extract_date_from_string, is_strictly_ongoing_or_upcoming
 
 urllib3.disable_warnings()
 
@@ -37,16 +41,13 @@ def extract_raw_text_from_pdf(pdf_url: str) -> str:
         for page in doc:
             text += page.get_text() + "\n"
 
-        # If digital text exists, return it
         if len(text.strip()) > 80:
             return text
 
-        # If scanned image PDF, run Tesseract OCR on the first page
         if len(doc) > 0:
             pix = doc[0].get_pixmap(dpi=200)
             with tempfile.NamedTemporaryFile(suffix=".png") as tmp_img:
                 pix.save(tmp_img.name)
-                # Check if tesseract binary exists
                 tesseract_bin = "/opt/homebrew/bin/tesseract" if os.path.exists("/opt/homebrew/bin/tesseract") else "tesseract"
                 res = subprocess.run(
                     [tesseract_bin, tmp_img.name, "stdout", "-l", "eng"],
@@ -63,9 +64,11 @@ def extract_raw_text_from_pdf(pdf_url: str) -> str:
     return ""
 
 
-def analyze_pdf_details(pdf_url: str, college_hint: str = "") -> Dict[str, str]:
-    """Analyzes a vacancy notice PDF and extracts structured vacancy details."""
+def analyze_pdf_details(pdf_url: str, title: str = "", college_hint: str = "") -> Dict[str, str]:
+    """Analyzes vacancy notice PDF and strictly checks if it is ONGOING or UPCOMING."""
     defaults = {
+        "is_active": False,
+        "status_reason": "No PDF data",
         "vacancies_count": "01 Post",
         "category": "All Eligible / UR / Reserved",
         "interview_date": "Check Official Notice",
@@ -85,7 +88,6 @@ def analyze_pdf_details(pdf_url: str, college_hint: str = "") -> Dict[str, str]:
     full_str = " ".join([l.strip() for l in raw_text.splitlines() if l.strip()])
 
     # 1. Number of Posts (Vacancies)
-    # Match patterns like: Philosophy 02, or (01 - Post), or No. of Posts: 01
     post_count = "01 Post"
     m_p1 = re.search(r'Philosophy[^\d\n]{0,25}(\d{1,2})\b', full_str, re.IGNORECASE)
     if m_p1:
@@ -101,7 +103,6 @@ def analyze_pdf_details(pdf_url: str, college_hint: str = "") -> Dict[str, str]:
 
     # 2. Reservation Category
     category = "All Eligible Categories"
-    # Specific category near Philosophy or in text
     cat_match = re.search(
         r'\b(EWS\s*(?:\([^\)]*\))?|SC\s*-\s*\d|1-UR|2-UR|UR\s*\(0?\d\)|UR|OBC|SC|ST|PwBD|All Categories)\b',
         full_str,
@@ -125,17 +126,17 @@ def analyze_pdf_details(pdf_url: str, college_hint: str = "") -> Dict[str, str]:
             category = c_found
 
     # 3. Interview Date & Time
-    interview_date = "Check Official PDF"
-    # Pattern A: DD.MM.YYYY or DD/MM/YYYY at HH:MM AM/PM
-    dt_match = re.search(
-        r'(\d{1,2}[./-]\d{1,2}[./-](?:20)?\d{2}(?:\s*\([A-Za-z]+\))?(?:\s*(?:at)?\s*\d{1,2}[:.]\d{2}\s*(?:[APap]\.?[Mm]\.?))?)',
-        full_str
-    )
-    # Pattern B: e.g. Friday 10th July, 2026 at 10:30 a.m.
+    interview_date = ""
+    # Pattern A: e.g. Friday 10th July, 2026 at 10:30 a.m.
     dt_match_b = re.search(
         r'((?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?\s*\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+20\d{2}(?:\s+at\s+\d{1,2}[:.]\d{2}\s*[APap]\.?[Mm]\.?)?)',
         full_str,
         re.IGNORECASE
+    )
+    # Pattern B: DD.MM.YYYY or DD/MM/YYYY at HH:MM AM/PM
+    dt_match = re.search(
+        r'(\d{1,2}[./-]\d{1,2}[./-](?:20)?\d{2}(?:\s*\([A-Za-z]+\))?(?:\s*(?:at)?\s*\d{1,2}[:.]\d{2}\s*(?:[APap]\.?[Mm]\.?))?)',
+        full_str
     )
     if dt_match_b and ("at" in dt_match_b.group(0).lower() or len(dt_match_b.group(0)) > 12):
         interview_date = dt_match_b.group(0).strip()
@@ -150,7 +151,7 @@ def analyze_pdf_details(pdf_url: str, college_hint: str = "") -> Dict[str, str]:
     elif "report 30 minutes before" in full_str.lower():
         reporting_time = "Report 30 minutes before schedule"
 
-    # 5. Application Deadline (if submission required before interview)
+    # 5. Application Deadline
     deadline = ""
     dl_match = re.search(r'latest by\s*([0-9A-Za-z,\s]+20\d{2})', full_str, re.IGNORECASE)
     if dl_match:
@@ -165,10 +166,20 @@ def analyze_pdf_details(pdf_url: str, college_hint: str = "") -> Dict[str, str]:
     elif "principal's office" in full_str.lower():
         venue = f"Principal's Office, {college_hint or 'College'}"
 
+    # 7. STRICT VALIDATION: Is this notice ongoing or upcoming?
+    is_active, status_reason = is_strictly_ongoing_or_upcoming(
+        title=title or full_str[:100],
+        interview_date_str=interview_date,
+        deadline_str=deadline,
+        full_text_hint=full_str[:400]
+    )
+
     return {
+        "is_active": is_active,
+        "status_reason": status_reason,
         "vacancies_count": post_count,
         "category": category,
-        "interview_date": interview_date,
+        "interview_date": interview_date or "Check Official Notice",
         "reporting_time": reporting_time,
         "venue": venue,
         "deadline": deadline or "Walk-in on Interview Date",
