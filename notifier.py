@@ -9,10 +9,12 @@ Features:
 """
 
 import os
+import re
 import smtplib
 import subprocess
 import sys
 from datetime import datetime
+from html import unescape
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import List
@@ -25,6 +27,27 @@ from config import (
     SMTP_PORT
 )
 from models import VacancyNotice
+
+
+def md_to_html(text: str) -> str:
+    """Converts markdown bold, italic, code, and entities to clean safe inline HTML without raw asterisks."""
+    if not text:
+        return ""
+    text = unescape(str(text))
+    # Bold italic: ***text*** or ___text___
+    text = re.sub(r'\*\*\*(.+?)\*\*\*', r'<strong style="color: #1c1917; font-weight: 800;"><em>\1</em></strong>', text)
+    text = re.sub(r'___(.+?)___', r'<strong style="color: #1c1917; font-weight: 800;"><em>\1</em></strong>', text)
+    # Bold: **text** or __text__
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong style="color: #1c1917; font-weight: 700;">\1</strong>', text)
+    text = re.sub(r'__(.+?)__', r'<strong style="color: #1c1917; font-weight: 700;">\1</strong>', text)
+    # Italic: *text* or _text_
+    text = re.sub(r'(?<!\*)\*([^\*]+?)\*(?!\*)', r'<em>\1</em>', text)
+    text = re.sub(r'(?<!\w)_([^_]+?)_(?!\w)', r'<em>\1</em>', text)
+    # Inline code: `text`
+    text = re.sub(r'`([^`]+?)`', r'<code style="font-family:\'SF Mono\',Menlo,monospace; font-size:12px; background-color:#f4f4f5; padding:2px 4px; border-radius:3px;">\1</code>', text)
+    # Clean up stray asterisks
+    text = re.sub(r'(?<!\w)\*(?!\w)', '', text)
+    return text.strip()
 
 
 def send_macos_notification(new_notices: List[VacancyNotice]) -> None:
@@ -125,6 +148,15 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
     # 2. Editorial HTML Cards
     cards_html = []
     for idx, n in enumerate(new_notices, 1):
+        html_college = md_to_html(n.college)
+        html_title = md_to_html(n.title)
+        html_vacancies = md_to_html(n.vacancies_count)
+        html_category = md_to_html(n.category)
+        html_date = md_to_html(n.interview_date)
+        html_time = md_to_html(n.reporting_time)
+        html_venue = md_to_html(n.venue)
+        html_deadline = md_to_html(n.deadline or 'Walk-in (Bring Original Dossier)')
+
         # Action Buttons (Canva/Adobe Minimalist Solid + Ghost Buttons)
         pdf_button_html = ""
         if n.pdf_link:
@@ -180,12 +212,12 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
 
                     <!-- College Display Title (Editorial Serif) -->
                     <h2 style="margin: 0 0 8px 0; font-family: 'Playfair Display', 'Bodoni MT', 'Didot', Georgia, serif; font-size: 24px; font-weight: 700; color: #1c1917; letter-spacing: -0.4px; line-height: 1.25;">
-                        {n.college}
+                        {html_college}
                     </h2>
 
                     <!-- Notice Title -->
                     <p style="margin: 0 0 18px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #57534e; line-height: 1.6;">
-                        {n.title}
+                        {html_title}
                     </p>
 
                     <!-- Editorial Specification Grid (Hairline Separators) -->
@@ -198,7 +230,7 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                                             Positions & Seats:
                                         </td>
                                         <td style="padding: 5px 0; color: #1c1917; font-weight: 700;">
-                                            {n.vacancies_count}
+                                            {html_vacancies}
                                         </td>
                                     </tr>
                                     <tr>
@@ -206,7 +238,7 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                                             Category Matrix:
                                         </td>
                                         <td style="padding: 5px 0; color: #1c1917; font-weight: 600;">
-                                            {n.category}
+                                            {html_category}
                                         </td>
                                     </tr>
                                     <tr>
@@ -214,7 +246,7 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                                             Walk-in Date & Time:
                                         </td>
                                         <td style="padding: 5px 0; color: #701a28; font-weight: 800; font-size: 14px;">
-                                            {n.interview_date}
+                                            {html_date}
                                         </td>
                                     </tr>
                                     <tr>
@@ -222,7 +254,7 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                                             Reporting Time:
                                         </td>
                                         <td style="padding: 5px 0; color: #292524; font-weight: 600;">
-                                            {n.reporting_time}
+                                            {html_time}
                                         </td>
                                     </tr>
                                     <tr>
@@ -230,7 +262,7 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                                             Venue / Location:
                                         </td>
                                         <td style="padding: 5px 0; color: #44403c;">
-                                            {n.venue}
+                                            {html_venue}
                                         </td>
                                     </tr>
                                     <tr>
@@ -238,7 +270,7 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                                             Mode / Deadline:
                                         </td>
                                         <td style="padding: 5px 0; color: #1c1917; font-weight: 600;">
-                                            {n.deadline or 'Walk-in (Bring Original Dossier)'}
+                                            {html_deadline}
                                         </td>
                                     </tr>
                                 </table>
