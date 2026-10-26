@@ -292,13 +292,13 @@ def build_email_content(new_notices: List[VacancyNotice]) -> tuple[str, str]:
                             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 14px;">
                                 <tr>
                                     <td align="left">
-                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 800; color: #78716c; letter-spacing: 2.5px; text-transform: uppercase;">
+                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 800; color: #78716c; letter-spacing: 2px; text-transform: uppercase;">
                                             UNIVERSITY OF DELHI &bull; DEPT. OF PHILOSOPHY
                                         </span>
                                     </td>
                                     <td align="right">
-                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 700; color: #a8a29e; letter-spacing: 1.5px; text-transform: uppercase;">
-                                            VOL. XXIV // NO. 10
+                                        <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 700; color: #78716c; letter-spacing: 1.5px; text-transform: uppercase;">
+                                            SESSION 2026–2027
                                         </span>
                                     </td>
                                 </tr>
