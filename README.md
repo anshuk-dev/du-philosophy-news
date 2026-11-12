@@ -3,7 +3,7 @@
 > **100% Free Automated Tracker** with deep PDF extraction for Philosophy Guest Faculty, Ad-hoc Panels, and Permanent Assistant Professor vacancies across all Delhi University colleges.
 
 [![DU Philosophy Vacancy Tracker](https://github.com/actions/workflows/du_philosophy_alert.yml/badge.svg)](https://github.com/actions/workflows/du_philosophy_alert.yml)
-**Last Checked:** `12 Nov 2026, 05:04 PM IST`  
+**Last Checked:** `13 Nov 2026, 03:22 AM IST`  
 **Total Active Notices Tracked:** `0`  
 **Direct Email Alerts to:** `anshu.philosophy@gmail.com`
 
